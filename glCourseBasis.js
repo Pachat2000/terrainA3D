@@ -14,6 +14,7 @@ var PLANE = null;
 var CUBE = null;
 var LAND = null;
 var PHONG = null;
+var RIVER = null;
 var LAMBERT = null;
 
 // =====================================================
@@ -640,7 +641,7 @@ class plane {
 	// --------------------------------------------
 	constructor(shader) {
 		this.shaderName='plane';
-		this.loaded=-1;
+		this.loaded=this.shaderName='plane'-1;
 		this.shader=null;
 		this.initAll(shader);
 	}
@@ -687,7 +688,7 @@ class plane {
 		this.nBuffer.itemSize = 3;
 		this.nBuffer.numItems = 4;
 
-		this.initTexture("texture3.png")
+		this.initTexture("ocean.webp")
 		
 	}
 
@@ -754,7 +755,7 @@ class plane {
                 shaderActif.initShadersParams();
             }	
 			this.setShadersParams(shaderActif);
-			gl.uniform4fv(shaderActif.shader.uMaterialColor, [0.8, 0.1, 0.1, 1.0]); // Rouge
+			gl.uniform4fv(shaderActif.shader.uMaterialColor, [1., 1., 1., 1.0]);
 			gl.drawArrays(gl.TRIANGLE_FAN, 0, this.vBuffer.numItems);
 			gl.drawArrays(gl.LINE_LOOP, 0, this.vBuffer.numItems);
 		}
@@ -762,7 +763,122 @@ class plane {
 
 }
 
+class river {
+	
+	// --------------------------------------------
+	constructor() {
+		this.shaderName='river';
+		this.loaded=-1;
+		this.shader=null;
+		this.initAll();
+	}
 
+	initTexture()
+	{
+		var texImage = new Image();
+		texImage.src = "Surface10.png";
+
+		var texture = gl.createTexture();
+		texture.image = texImage;
+
+		texImage.onload = function () {
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+			gl.bindTexture(gl.TEXTURE_2D, texture);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+			gl.activeTexture(gl.TEXTURE0);
+		}
+	}
+		
+	// --------------------------------------------
+	initAll() {
+		var size=1.0;
+		var vertices = [
+			-size, -size, 0.1,
+			 size, -size, 0.1,
+			 size, size, 0.1,
+			-size, size, 0.1
+		];
+
+		var texcoords = [
+			0.0,0.0,
+			0.0,1.0,
+			1.0,1.0,
+			1.0,0.0
+		];
+
+		var normals = [
+			0.0, 0.0, 1.0,
+			0.0, 0.0, 1.0,
+			0.0, 0.0, 1.0,
+			0.0, 0.0, 1.0,
+		];
+
+		this.vBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+		this.vBuffer.itemSize = 3;
+		this.vBuffer.numItems = 4;
+
+		this.tBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.tBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texcoords), gl.STATIC_DRAW);
+		this.tBuffer.itemSize = 2;
+		this.tBuffer.numItems = 4;
+
+		this.nBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.nBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
+		this.nBuffer.itemSize = 3;
+		this.nBuffer.numItems = 4;
+
+		loadShaders(this);
+		this.initTexture()
+	}
+	
+	
+	// --------------------------------------------
+	setShadersParams() {
+		gl.useProgram(this.shader);
+
+		this.shader.vAttrib = gl.getAttribLocation(this.shader, "aVertexPosition");
+		gl.enableVertexAttribArray(this.shader.vAttrib);
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+		gl.vertexAttribPointer(this.shader.vAttrib, this.vBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+		this.shader.tAttrib = gl.getAttribLocation(this.shader, "aTexCoords");
+		gl.enableVertexAttribArray(this.shader.tAttrib);
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.tBuffer);
+		gl.vertexAttribPointer(this.shader.tAttrib,this.tBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+		this.shader.nAttrib = gl.getAttribLocation(this.shader, "aNormals");
+		gl.enableVertexAttribArray(this.shader.nAttrib);
+        gl.bindBuffer(gl.ARRAY_BUFFER, this.nBuffer);
+        gl.vertexAttribPointer(this.shader.nAttrib, this.nBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+		this.shader.pMatrixUniform = gl.getUniformLocation(this.shader, "uPMatrix");
+		this.shader.mvMatrixUniform = gl.getUniformLocation(this.shader, "uMVMatrix");
+
+		mat4.identity(mvMatrix);
+		mat4.translate(mvMatrix, distCENTER);
+		mat4.multiply(mvMatrix, rotMatrix);
+
+		gl.uniformMatrix4fv(this.shader.pMatrixUniform, false, pMatrix);
+		gl.uniformMatrix4fv(this.shader.mvMatrixUniform, false, mvMatrix);
+	}
+
+	// --------------------------------------------
+	draw() {
+		if(this.shader && this.loaded==4) {		
+			this.setShadersParams();
+			
+			gl.drawArrays(gl.TRIANGLE_FAN, 0, this.vBuffer.numItems);
+			gl.drawArrays(gl.LINE_LOOP, 0, this.vBuffer.numItems);
+		}
+	}
+
+}
 // =====================================================
 // FONCTIONS GENERALES, INITIALISATIONS
 // =====================================================
@@ -889,18 +1005,20 @@ function webGLStart() {
 
 	distCENTER = vec3.create([0,-0.2,-3]);
 
-	PHONG = new phong();
+	RIVER = new river();
+
+	//PHONG = new phong();
 	
-	PLANE = new plane();
+	//PLANE = new plane();
 
-	CUBE = new cube();
+	//CUBE = new cube();
 
-	LAND = new land();
+	//LAND = new land();
 
-	LAMBERT = new lambert();
+	//LAMBERT = new lambert();
 
-	OBJ1 = new objmesh('porsche.obj');
-	OBJ2 = new objmesh('porsche.obj');
+	//OBJ1 = new objmesh('porsche.obj');
+	//OBJ2 = new objmesh('porsche.obj');
 	
 	tick();
 }
@@ -909,10 +1027,11 @@ function webGLStart() {
 // =====================================================
 function drawScene() {
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	//PLANE.draw(PHONG);
+	//PLANE.draw(LAMBERT);
     //CUBE.draw(PHONG);
 	//OBJ1.draw(PHONG);
-	LAND.draw(PHONG);
+	//LAND.draw(PHONG);
+	RIVER.draw();
 	//OBJ2.draw();
 }
 
