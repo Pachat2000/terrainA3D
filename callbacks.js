@@ -81,3 +81,17 @@ function handleMouseMove(event) {
 	lastMouseX = newX
 	lastMouseY = newY;
 }
+
+// Variable globale ou accessible dans votre boucle de rendu WebGL
+var rotationSpeed = 50;
+
+function updateSliderValue(val) {
+	// 1. Mise à jour de l'affichage du texte à côté du curseur
+	document.getElementById("speedValue").innerText = val;
+
+	// 2. Traitement de la valeur (convertie en nombre)
+	rotationSpeed = parseFloat(val);
+
+	// Facultatif : si vous souhaitez normaliser la valeur (ex: entre 0.0 et 1.0)
+	// float normalizedVal = val / 100.0;
+}
