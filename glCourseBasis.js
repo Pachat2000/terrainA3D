@@ -119,39 +119,35 @@ class land{
 	// --------------------------------------------
 	initAll() {
 		var img = new Image();
-		img.src = "texture3.png";
+		img.src = "texture2.png"; //heighMap
 		img.onload = () => {
-			const canvas = document.createElement("canvas");
-            canvas.width = img.width;
-            canvas.height = img.height;
-            const ctx = canvas.getContext("2d");
-            ctx.drawImage(img, 0, 0);
 
-            const imgData = ctx.getImageData(0, 0, img.width, img.height);
-            
-            this.buildTerrain(imgData.data, img.width, img.height);
-			this.initTexture(img.src)
+            this.buildTerrain(img.width, img.height);
+			this.initHeighMap(img)
+		};
+
+		var img2 = new Image();
+		img2.src = "ocean.webp"; //texture
+		img2.onload = () => {
+
+			this.initTexture(img2)
 		};
 	}
 	
 
 	// --------------------------------------------
-	buildTerrain(pixels, width, height){
+	buildTerrain(width, height){
 
 		var terrainSize = 3.0;
 		var vertices = [];
-		var indicesGrasses = [];
-		var indicesPics = [];
-		var indicesLands = [];
+		var indices = [];
+
 		var textures = [];
 		for(var z = 0; z < height; z++){
 			for(var x = 0; x < width; x++){
-				var pixelIndex = (z * width + x) * 4;
-				var r = pixels[pixelIndex];
 				var xPos = (x / (width - 1)) * terrainSize - (terrainSize / 2.0);
 				var zPos = (z / (height - 1)) * terrainSize - (terrainSize / 2.0);
-				var y = r/255 * 0.5;
-				vertices.push(xPos, y, zPos);
+				vertices.push(xPos, 0.0, zPos);
 
 				var u = x / (width - 1);  
                 var v = z / (height - 1); 
@@ -167,22 +163,8 @@ class land{
 				var bottomLeft = ((z + 1) * width + x);
 				var bottomRight = ((z + 1)  * width + x) +1;
 
-
-				var pixelIndex = (z * width + x) * 4;
-                var r = pixels[pixelIndex];
-                var hauteur = (r / 255) * 0.5;
-
-				if (hauteur > 0.35) {
-                    indicesPics.push(topLeft, bottomLeft, bottomRight);
-					indicesPics.push(topLeft, bottomRight, topRight);      
-                } else if (hauteur > 0.15) {
-                    indicesLands.push(topLeft, bottomLeft, bottomRight);
-					indicesLands.push(topLeft, bottomRight, topRight); 
-                } else {
-                    indicesGrasses.push(topLeft, bottomLeft, bottomRight);
-					indicesGrasses.push(topLeft, bottomRight, topRight);
-                }
-
+				indices.push(topLeft, bottomLeft, bottomRight);
+				indices.push(topLeft, bottomRight, topRight);
 			}
 		}
 
@@ -193,20 +175,10 @@ class land{
 		this.vBuffer.itemSize = 3;
 		this.vBuffer.numItems = vertices.length;
 
-		this.iBufferP = gl.createBuffer();
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBufferP);
-		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indicesPics), gl.STATIC_DRAW);
-		this.iBufferP.numItems = indicesPics.length;
-
-		this.iBufferL = gl.createBuffer();
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBufferL);
-		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indicesLands), gl.STATIC_DRAW);
-		this.iBufferL.numItems = indicesLands.length;
-
-		this.iBufferG = gl.createBuffer();
-		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBufferG);
-		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indicesGrasses), gl.STATIC_DRAW);
-		this.iBufferG.numItems = indicesGrasses.length;
+		this.iBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+		gl.bufferData(gl.ELEMENT_ARRAY_BUFFER, new Uint32Array(indices), gl.STATIC_DRAW);
+		this.iBuffer.numItems = indices.length;
 
 		this.tBuffer = gl.createBuffer();
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.tBuffer);
@@ -214,7 +186,6 @@ class land{
 		this.tBuffer.itemSize = 2;
 		this.tBuffer.numItems = textures.length;
 
-		loadShaders(this);
 	}
 	
 	// --------------------------------------------
@@ -237,51 +208,67 @@ class land{
 		gl.uniformMatrix4fv(shaderActif.shader.pMatrixUniform, false, pMatrix);
         gl.uniformMatrix4fv(shaderActif.shader.mvMatrixUniform, false, mvMatrix);
 
-		gl.uniform1i(shaderActif.shader.uLighting, 0);
-		gl.uniform1i(shaderActif.shader.uTextureUnit, 0);
+		var normalMatrix = mat3.create();
+        mat4.toInverseMat3(mvMatrix, normalMatrix);
+        mat3.transpose(normalMatrix);
+        gl.uniformMatrix3fv(shaderActif.shader.uNormalMatrix, false, normalMatrix);
+
+		gl.uniform1i(shaderActif.shader.uLighting, true);
+		gl.uniform1i(shaderActif.shader.uTextureUnit, 1);
 		gl.uniform1i(shaderActif.shader.uTexturing, true);
+
+		gl.uniform1i(shaderActif.shader.terrain, 1);
+		gl.uniform1i(shaderActif.shader.uHeightMap, 0);
+
+		gl.uniform4fv(shaderActif.shader.uMaterialSpecular, [.3, .3, .3,1.0]); 
+        gl.uniform1f(shaderActif.shader.uMaterialShininess, 10.0);
 
 	}
 
 	// --------------------------------------------
 	initTexture(texturePath)
 	{
-		var texImage = new Image();
-		texImage.src = texturePath;
+		this.textureTerrain = gl.createTexture();
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+		gl.bindTexture(gl.TEXTURE_2D, this.textureTerrain);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texturePath);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.activeTexture(gl.TEXTURE1);	
+	}
 
-		var texture = gl.createTexture();
-		texture.image = texImage;
-
-		texImage.onload = function () {
-			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
-			gl.bindTexture(gl.TEXTURE_2D, texture);
-			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texture.image);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
-			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
-			gl.activeTexture(gl.TEXTURE0);
-		}
+	initHeighMap(img)
+	{
+		this.heighMap = gl.createTexture();
+		gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+		gl.bindTexture(gl.TEXTURE_2D, this.heighMap);
+		gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, img);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+		gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+		gl.activeTexture(gl.TEXTURE0);
 	}
 
 	// --------------------------------------------
 	draw(shaderActif) {
 		if(shaderActif && shaderActif.loaded==4) {
-			if (!shaderActif.shader.Init) {
+			if (!shaderActif.Init) {
                 shaderActif.initShadersParams();
-            }			
-			this.setShadersParams(shaderActif);
+            }
+			else{
+				this.setShadersParams(shaderActif);
+
+				gl.activeTexture(gl.TEXTURE0);
+                gl.bindTexture(gl.TEXTURE_2D, this.heighMap);
+
+				gl.activeTexture(gl.TEXTURE1);
+				gl.bindTexture(gl.TEXTURE_2D, this.textureTerrain);
+
+				gl.uniform4fv(shaderActif.shader.uMaterialColor, [1.0, 1.0, 1.0, 1.0]); // Rouge
+				gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBuffer);
+				//gl.drawElements(gl.TRIANGLES, this.iBuffer.numItems, gl.UNSIGNED_INT, 0);
+				gl.drawElements(gl.LINE_STRIP, this.iBuffer.numItems, gl.UNSIGNED_INT, 0); // fils de fers
+			}			
 			
-			gl.uniform4fv(shaderActif.shader.uMaterialColor, [1.0, 1.0, 1.0, 1.0]); // Rouge
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBufferP);
-			gl.drawElements(gl.TRIANGLES, this.iBufferP.numItems, gl.UNSIGNED_INT, 0);
-
-			gl.uniform4fv(shaderActif.shader.uMaterialColor, [0.4, 0.25, 0.1, 1.0]); // Rouge
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBufferL);
-			gl.drawElements(gl.TRIANGLES, this.iBufferL.numItems, gl.UNSIGNED_INT, 0);
-
-			gl.uniform4fv(shaderActif.shader.uMaterialColor, [0.2, 0.6, 0.2, 1.0]); // Rouge
-			gl.bindBuffer(gl.ELEMENT_ARRAY_BUFFER, this.iBufferG);
-			gl.drawElements(gl.TRIANGLES, this.iBufferG.numItems, gl.UNSIGNED_INT, 0);
-			//gl.drawArrays(gl.LINE_LOOP, 0, this.vBuffer.numItems);
 		}
 	}
 
@@ -328,16 +315,14 @@ class phong {
 		this.shader.uLightColor = gl.getUniformLocation(this.shader, "uLightColor");//
 		this.shader.uAmbiantLight = gl.getUniformLocation(this.shader, "uAmbiantLight");//
 
-		this.shader.uAmbiantLight = gl.getUniformLocation(this.shader, "uAmbiantLight");//
-		this.shader.uAmbiantLight = gl.getUniformLocation(this.shader, "uAmbiantLight");//
-		this.shader.uAmbiantLight = gl.getUniformLocation(this.shader, "uAmbiantLight");//
-
 		this.shader.uTextureUnit = gl.getUniformLocation(this.shader, "uTextureUnit");
 		this.shader.uTexturing = gl.getUniformLocation(this.shader, "uTexturing");
+
+		this.shader.terrain = gl.getUniformLocation(this.shader, "terrain");//si utilise une heighMap
 		
 		gl.uniform1i(this.shader.uNormalizing, 1);
-		gl.uniform4fv(this.shader.uLightSpecular, [1.0, 1.0, 1.0, 1.0]);
-		gl.uniform3fv(this.shader.uLightPos, [5.0, 5.0, 5.0]);     // Position de la lumière
+		gl.uniform4fv(this.shader.uLightSpecular, [.5, .5, .5, 1.0]);
+		gl.uniform3fv(this.shader.uLightPos, [0.0, 5.0, 3.0]);     // Position de la lumière
 		gl.uniform4fv(this.shader.uAmbiantLight, [0.2, 0.2, 0.2, 1.0]);
 		gl.uniform4fv(this.shader.uLightColor, [0.8, 0.8, 0.8, 1.0]);
 
@@ -641,7 +626,7 @@ class plane {
 	// --------------------------------------------
 	constructor(shader) {
 		this.shaderName='plane';
-		this.loaded=this.shaderName='plane'-1;
+		this.loaded=-1;
 		this.shader=null;
 		this.initAll(shader);
 	}
@@ -745,19 +730,24 @@ class plane {
 		gl.uniform1i(shaderActif.shader.uLighting, 1);
 
 		gl.uniform1i(shaderActif.shader.uTexturing, true);
-		gl.uniform1i(shaderActif.shader.uTextureUnit, 0);
+		gl.uniform1i(shaderActif.shader.uTextureUnit, 1);
+
+		gl.uniform1i(shaderActif.shader.terrain, 0);
+		gl.uniform1i(shaderActif.shader.uHeightMap, 0);
 	}
 
 	// --------------------------------------------
 	draw(shaderActif) {
 		if(shaderActif && shaderActif.loaded==4) {	
-			if (!shaderActif.shader.Init) {
+			if (!shaderActif.Init) {
                 shaderActif.initShadersParams();
             }	
-			this.setShadersParams(shaderActif);
-			gl.uniform4fv(shaderActif.shader.uMaterialColor, [1., 1., 1., 1.0]);
-			gl.drawArrays(gl.TRIANGLE_FAN, 0, this.vBuffer.numItems);
-			gl.drawArrays(gl.LINE_LOOP, 0, this.vBuffer.numItems);
+			else{
+				this.setShadersParams(shaderActif);
+				gl.uniform4fv(shaderActif.shader.uMaterialColor, [1., 1., 1., 1.0]);
+				gl.drawArrays(gl.TRIANGLE_FAN, 0, this.vBuffer.numItems);
+				//gl.drawArrays(gl.LINE_LOOP, 0, this.vBuffer.numItems);
+			}
 		}
 	}
 
@@ -976,13 +966,16 @@ function compileShaders(Obj3D)
 	}
 
 	Obj3D.shader = gl.createProgram();
-	gl.attachShader(Obj3D.shader, Obj3D.vshader);
-	gl.attachShader(Obj3D.shader, Obj3D.fshader);
-	gl.linkProgram(Obj3D.shader);
-	if (!gl.getProgramParameter(Obj3D.shader, gl.LINK_STATUS)) {
-		console.log("Could not initialise shaders");
-		console.log(gl.getShaderInfoLog(Obj3D.shader));
-	}
+    gl.attachShader(Obj3D.shader, Obj3D.vshader);
+    gl.attachShader(Obj3D.shader, Obj3D.fshader);
+    gl.linkProgram(Obj3D.shader);
+    
+    if (!gl.getProgramParameter(Obj3D.shader, gl.LINK_STATUS)) {
+        console.log("Could not initialise shaders");
+        
+        // LA CORRECTION EST ICI : getProgramInfoLog
+        console.log(gl.getProgramInfoLog(Obj3D.shader)); 
+    }
 }
 
 
@@ -1003,17 +996,17 @@ function webGLStart() {
 	mat4.rotate(rotMatrix, rotX, [1, 0, 0]);
 	mat4.rotate(rotMatrix, rotY, [0, 0, 1]);
 
-	distCENTER = vec3.create([0,-0.2,-3]);
+	distCENTER = vec3.create([0.0, -0.5, -5.0]);
 
-	RIVER = new river();
+	//RIVER = new river();
 
-	//PHONG = new phong();
+	PHONG = new phong();	
 	
-	//PLANE = new plane();
+	PLANE = new plane();
 
 	//CUBE = new cube();
 
-	//LAND = new land();
+	LAND = new land();
 
 	//LAMBERT = new lambert();
 
@@ -1027,11 +1020,11 @@ function webGLStart() {
 // =====================================================
 function drawScene() {
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
-	//PLANE.draw(LAMBERT);
+	PLANE.draw(PHONG);
     //CUBE.draw(PHONG);
 	//OBJ1.draw(PHONG);
-	//LAND.draw(PHONG);
-	RIVER.draw();
+	LAND.draw(PHONG);
+	//RIVER.draw();
 	//OBJ2.draw();
 }
 

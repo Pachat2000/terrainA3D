@@ -22,6 +22,7 @@ varying vec3 vNormal;
 varying vec3 vViewVec;  
 varying vec3 vLightVec;
 varying vec2 vTexCoord;
+varying float vHeight;
 
 
 void main(void) {
@@ -34,6 +35,12 @@ void main(void) {
 	//vColor = vec4(abs(aVertexNormal), 1);
 	vec4 textCoord = uMaterialColor;
 	if(uTexturing) textCoord = texture2D(uTextureUnit,vTexCoord) * uMaterialColor;
+	else{
+		if(vHeight > 0.8) textCoord = vec4(1.,1.,1.,1.);
+		else if(vHeight > 0.4) textCoord = vec4(0.4, 0.25, 0.1, 1.0);
+		else textCoord = vec4(0.,1.,0.,1.);
+
+	}
     if (uLighting)
 	{
 	  vec3 normal = normalize(vNormal);
