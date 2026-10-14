@@ -11,7 +11,7 @@ uniform vec3 uLightPos; //k
 // vertex attributes
 attribute vec3 aVertexPosition;
 attribute vec3 aVertexNormal;
-attribute vec2 aTexCoord;
+attribute vec2 aTexCoords;
 // Interpolated data
 
 uniform bool terrain;
@@ -27,19 +27,19 @@ varying float vHeight;
 
 void main(void) {
     vec3 positionFinale = aVertexPosition;
-	vec3 normal = uNormalMatrix * aVertexNormal;
+	vec3 normal;
 
     if(terrain) {
-        float h = texture2D(uHeightMap, aTexCoord).r;
-        positionFinale.y = h;
+        float h = texture2D(uHeightMap, aTexCoords).r;
+        positionFinale.z = h;
         vHeight = h;
         float decalageTex = 0.01; 
         float ecartPhysique = 0.1;
 
-        float hL = texture2D(uHeightMap, aTexCoord + vec2(-decalageTex, 0.0)).r * 0.5;
-        float hR = texture2D(uHeightMap, aTexCoord + vec2(decalageTex, 0.0)).r * 0.5;
-        float hT = texture2D(uHeightMap, aTexCoord + vec2(0.0, -decalageTex)).r * 0.5;
-        float hB = texture2D(uHeightMap, aTexCoord + vec2(0.0, decalageTex)).r * 0.5;
+        float hL = texture2D(uHeightMap, aTexCoords + vec2(-decalageTex, 0.0)).r * 0.5;
+        float hR = texture2D(uHeightMap, aTexCoords + vec2(decalageTex, 0.0)).r * 0.5;
+        float hT = texture2D(uHeightMap, aTexCoords + vec2(0.0, -decalageTex)).r * 0.5;
+        float hB = texture2D(uHeightMap, aTexCoords + vec2(0.0, decalageTex)).r * 0.5;
 
         vec3 normaleCalculee = normalize(vec3(
             -(hR - hL) / (2.0 * ecartPhysique),
@@ -55,7 +55,7 @@ void main(void) {
     vPosition = pos.xyz;
     vNormal = normal;
     
-    vTexCoord = aTexCoord;
+    vTexCoord = aTexCoords;
 
     vViewVec = -pos.xyz; // Le vecteur vers la caméra (qui est en 0,0,0) 
     vLightVec = uLightPos - pos.xyz;

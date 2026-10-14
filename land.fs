@@ -16,6 +16,7 @@ uniform sampler2D uTextureUnit;
 uniform bool uTexturing;
 
 
+
 // Only color is interpolated
 varying vec3 vPosition;
 varying vec3 vNormal;
