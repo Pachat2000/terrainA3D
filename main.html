@@ -9,59 +9,6 @@
 	<script type="text/javascript" src="glCourseBasis.js"></script>
 	<script type="text/javascript" src="objLoader.js"></script>
 
-<!--</head> !-->
-
-	<style>
-		.main-container {
-			display: flex;
-			flex-direction: row;
-			align-items: flex-start;
-			gap: 15px;
-		}
-
-		.controls-panel {
-			display: flex;
-			flex-direction: column;
-			gap: 10px;
-			width: 180px;
-		}
-
-		.controls-panel button {
-			padding: 10px 15px;
-			font-size: 14px;
-			cursor: pointer;
-			background-color: #8d47bf;
-			color: white;
-			border: none;
-			border-radius: 4px;
-			transition: background-color 0.2s;
-		}
-
-		.controls-panel button:hover {
-			background-color: #8d47bf;
-		}
-
-		.slider-group {
-			display: flex;
-			flex-direction: column;
-			gap: 5px;
-		}
-
-		.slider-group label {
-			font-size: 14px;
-			font-weight: bold;
-		}
-
-		.slider-group input[type="range"] {
-			width: 100%;
-			cursor: pointer;
-		}
-
-		.slider-value {
-			font-size: 13px;
-			color: #555;
-		}
-	</style>
 </head>
 
 <body class="bg-dark text-light p-4" onload="webGLStart();">
@@ -75,8 +22,12 @@
           <canvas id="WebGL-test" class="rounded" width="800" height="600"></canvas>
         </div>
       </div>
+	  <div class="col">
+		<div class="row">
 
-      <div class="col" style="max-width: 360px;">
+		<!-- PARAMETRE TERRAIN -->
+
+		<div class="col-6">
         <div class="card bg-secondary bg-opacity-25 border-secondary shadow p-3 text-light">
           <h5 class="card-title pb-2 border-bottom border-secondary mb-3">Paramètres du Terrain</h5>
 
@@ -97,19 +48,18 @@
           </div>
 
           <div class="mb-3">
-            <label for="terrainSelect" class="form-label text-secondary fw-semibold small text-uppercase">Terrain</label>
+            <label for="terrainSelect" class="form-label text-secondary fw-semibold small text-uppercase">Height Map</label>
             <select id="terrainSelect" class="form-select bg-dark text-light border-secondary">
-              <option value="texture1.png">Cailloux</option>
-              <option value="texture2.png" selected>Montagnes</option>
-              <option value="texture3.png">Volcan ?</option>
+              <option value="heightmap/texture1.png">Cailloux</option>
+              <option value="heightmap/texture2.png" selected>Montagnes</option>
+              <option value="heightmap/texture3.png">Volcan</option>
             </select>
-          </div>
 
           <div class="mb-2">
             <label for="textureSelect" class="form-label text-secondary fw-semibold small text-uppercase">Texture</label>
             <select id="textureSelect" class="form-select bg-dark text-light border-secondary">
-              <option value="ocean.webp">Océan</option>
-              <option value="Surface10.png" selected>Bump Map</option>
+              <option value="texture/ocean.webp" selected>Océan</option>
+              <option value="bumpmap/Surface10.png">Bump Map</option>
             </select>
           </div>
 
@@ -117,9 +67,74 @@
       </div>
 
     </div>
+
+	<!-- PARAMETRE RIVIERE -->
+
+	<div class="col-6">
+        <div class="card bg-secondary bg-opacity-25 border-secondary shadow p-3 text-light">
+          <h5 class="card-title pb-2 border-bottom border-secondary mb-3">Paramètres de la rivière</h5>
+
+          <div class="mb-3">
+            <label class="form-label text-secondary fw-semibold small text-uppercase">Affichage</label>
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" role="switch" id="waterDisplay">
+              <label class="form-check-label" for="textureActivation">Afficher</label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="waterTextureSelect" class="form-label text-secondary fw-semibold small text-uppercase">Texture Eau</label>
+            <select id="waterTextureSelect" class="form-select bg-dark text-light border-secondary">
+              <option value="river.jpg" selected>Rivière</option>
+              <option value="ocean.jpg">Océan</option>
+              <option value="sea.jpg">Mer</option>
+            </select>
+          </div>
+
+          <div class="mb-2">
+            <label for="waterBumMapSelect" class="form-label text-secondary fw-semibold small text-uppercase">Bum Map Eau</label>
+            <select id="waterBumMapSelect" class="form-select bg-dark text-light border-secondary">
+              <option value="river_normal.jpg" selected>Rivière</option>
+              <option value="ocean_normal.jpg">Océan</option>
+              <option value="sea_normal.jpg">Mer</option>
+            </select>
+          </div>
+
+        </div>
+      </div>
+
+	  <!-- PARAMETRE OBJ -->
+
+	  <div class="col-6">
+        <div class="card bg-secondary bg-opacity-25 border-secondary shadow p-3 text-light">
+          <h5 class="card-title pb-2 border-bottom border-secondary mb-3">Paramètres des .obj</h5>
+
+          <div class="mb-3">
+            <label class="form-label text-secondary fw-semibold small text-uppercase">Affichage</label>
+            <div class="form-check form-switch mb-2">
+              <input class="form-check-input" type="checkbox" role="switch" id="objDisplay">
+              <label class="form-check-label" for="objActivation">Afficher</label>
+            </div>
+          </div>
+
+          <div class="mb-3">
+            <label for="objSelect" class="form-label text-secondary fw-semibold small text-uppercase">Terrain</label>
+            <select id="objSelect" class="form-select bg-dark text-light border-secondary">
+              <option value="bunny.obj" selected >Lapin</option>
+              <option value="sphere.obj">Sphere</option>
+			  <option value="porsche.obj">Porshe</option>
+			  <option value="mustang.obj">Mustang</option>
+            </select>
+        </div>
+      </div>
+
+    </div>
+
+    </div>
+		</div>
+		</div>
   </div>
 </body>
 
 
 </html>
-!-->

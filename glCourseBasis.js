@@ -20,6 +20,9 @@ var LAMBERT = null;
 var isWireframe = false;
 var isTextured = false;
 var isLandDisplay = false;
+var isObjDisplay = false;
+var selectedObj = null;
+var isWaterDisplay = false;
 
 // =====================================================
 // OBJET 3D, lecture fichier obj
@@ -93,7 +96,7 @@ class land{
 	// --------------------------------------------
 	initAll() {
 		var img = new Image();
-		img.src = "texture2.png"; //heighMap
+		img.src = "heightmap/texture2.png"; //heighMap
 		img.onload = () => {
 
             this.buildTerrain(img.width, img.height);
@@ -101,7 +104,7 @@ class land{
 		};
 
 		var img2 = new Image();
-		img2.src = "ocean.webp"; //texture
+		img2.src = "texture/ocean.webp"; //texture
 		img2.onload = () => {
 
 			this.initTexture(img2)
@@ -403,8 +406,8 @@ class river {
 	}
 
 	initTexture(){
-		this.texture = this.loadTexture("ocean.webp");
-		this.bumpmap = this.loadTexture("Surface10.png")
+		this.texture = this.loadTexture("texture/river.jpg");
+		this.bumpmap = this.loadTexture("bumpmap/river_normal.jpg")
 	}
 		
 	// --------------------------------------------
@@ -504,19 +507,19 @@ class river {
         gl.uniformMatrix3fv(this.shader.uNormalMatrix, false, normalMatrix);
 
 		gl.uniform1i(this.shader.uNormalizing, 1);
-		gl.uniform1i(this.shader.uTexturing, 0); // texture activation
+		gl.uniform1i(this.shader.uTexturing, 1); // texture activation
 		gl.uniform4fv(this.shader.uMaterialColor, [0.5, 0.5, 0.5, 1.0]);
 
 		gl.uniform3fv(this.shader.uLightPos, lightPos);
-		gl.uniform4fv(this.shader.uAmbiantLight, [0.5, 0.5, 0.5, 1.0]);
-		gl.uniform4fv(this.shader.uLightColor, [0.8, 0.8, 0.8, 1.0])
+		gl.uniform4fv(this.shader.uAmbiantLight, [0.05, 0.2, 0.3, 1.0]);
+		gl.uniform4fv(this.shader.uLightColor, [0.9, 0.95, 1.0, 1.0])
 		gl.uniform1i(this.shader.uTextureUnit, 0);
 		gl.uniform1i(this.shader.uSampler, 1);
 		gl.uniform1i(this.shader.uLighting, true);
 
 		gl.uniform4fv(this.shader.uLightSpecular, [1.0, 1.0, 1.0, 1.0]);    
 		gl.uniform4fv(this.shader.uMaterialSpecular, [1.0, 1.0, 1.0, 1.0]);
-		gl.uniform1f(this.shader.uMaterialShininess, 64.0);
+		gl.uniform1f(this.shader.uMaterialShininess, 200.0);
 
 		gl.uniform1i(this.shader.uTextureUnit, 0);
 		gl.activeTexture(gl.TEXTURE0);
@@ -609,7 +612,7 @@ function loadShaderText(Obj3D,ext) {   // lecture asynchrone...
   }
   
   Obj3D.loaded = 0;
-  xhttp.open("GET", Obj3D.shaderName+ext, true);
+  xhttp.open("GET",'shaders/' + Obj3D.shaderName + ext, true);
   xhttp.overrideMimeType('text/plain');
   xhttp.send();
 }
@@ -670,7 +673,7 @@ function webGLStart() {
 	LAND = new land();
 	RIVER = new river();
 
-	OBJ1 = new objmesh('porsche.obj');
+	OBJ1 = new objmesh('obj/bunny.obj');
 	//OBJ2 = new objmesh('porsche.obj');
 	
 	tick();
@@ -682,8 +685,8 @@ function drawScene() {
 	gl.clear(gl.COLOR_BUFFER_BIT | gl.DEPTH_BUFFER_BIT);
 	//PLANE.draw();
 	if(isLandDisplay) LAND.draw();
-	//OBJ1.draw();
-	RIVER.draw();
+	if(isObjDisplay) OBJ1.draw();
+	if(isWaterDisplay) RIVER.draw();
 }
 
 document.addEventListener("DOMContentLoaded", () => {
@@ -728,6 +731,37 @@ document.addEventListener("DOMContentLoaded", () => {
 			if (!LAND) return;
 			LAND.initTexture(newText);
 		};
+	});
+
+	var toggleText = document.getElementById("objDisplay");
+    if (toggleText) {
+		isObjDisplay = toggleText.checked;
+        toggleText.addEventListener("change", (e) => {
+            isObjDisplay = e.target.checked;
+        });
+    }
+
+	document.getElementById("objSelect").addEventListener("change", (e) => {
+		if (!OBJ1) return;
+		OBJ1 = new objmesh('obj/'+ e.target.value);
+	});
+
+	var toggleText = document.getElementById("waterDisplay");
+    if (toggleText) {
+		isWaterDisplay = toggleText.checked;
+        toggleText.addEventListener("change", (e) => {
+            isWaterDisplay = e.target.checked;
+        });
+    }
+
+	document.getElementById("waterTextureSelect").addEventListener("change", (e) => {
+		if (!RIVER) return;
+		RIVER.texture = RIVER.loadTexture('texture/' + e.target.value);
+	});
+
+	document.getElementById("waterBumMapSelect").addEventListener("change", (e) => {
+		if (!RIVER) return;
+		RIVER.bumpmap = RIVER.loadTexture('bumpmap/' + e.target.value);
 	});
 });
 
