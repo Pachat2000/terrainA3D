@@ -59,14 +59,25 @@ function handleMouseUp(event) {
 // =====================================================
 function handleMouseMove(event) {
 	
+	
 	if (!mouseDown) return;
+
+	var dx = event.clientX - lastMouseX;
+    var dy = event.clientY - lastMouseY;
+	if (event.shiftKey) {
+        
+        lightPos[0] += dx ;
+        lightPos[2] += dy ;
+        
+        return;
+    }
 
 	var newX = event.clientX;
 	var newY = event.clientY;	
 	var deltaX = newX - lastMouseX;
 	var deltaY = newY - lastMouseY;
 	
-	if(event.shiftKey) {
+	if(event.ctrlKey) {
 		distCENTER[2] += deltaY/100.0;
 	} else {
 
