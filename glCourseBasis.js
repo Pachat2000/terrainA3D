@@ -104,7 +104,7 @@ class land{
 		};
 
 		var img2 = new Image();
-		img2.src = "texture/ocean.webp"; //texture
+		img2.src = "texture/snow.jpg"; //texture
 		img2.onload = () => {
 
 			this.initTexture(img2)
