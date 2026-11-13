@@ -1,3 +1,4 @@
+const { Vector } = require("sat");
 
 // =====================================================
 var gl;
@@ -530,7 +531,7 @@ class river {
 class wave {
 	constructor(){
 		this.lambda = 50;
-		this.orientation = null; // vecteur 2D
+		this.orientation = Vector(1.3, 1.2); // vecteur 2D
 		this.delta_profil = 0.8;
 		this.freqency = 1/this.lambda;
 		this.velocity = Math.sqrt((this.lambda*9.81)/(2*Math.PI));
@@ -593,6 +594,103 @@ class wave {
 
 		loadShaders(this);
 		this.initTexture()
+	}
+
+	setShadersParams() {
+		gl.useProgram(this.shader);
+
+		this.shader.vAttrib = gl.getAttribLocation(this.shader, "aVertexPosition");//
+		gl.enableVertexAttribArray(this.shader.vAttrib);
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+		gl.vertexAttribPointer(this.shader.vAttrib, this.vBuffer.itemSize, gl.FLOAT, false, 0, 0);
+
+		this.shader.tAttrib = gl.getAttribLocation(this.shader, "aTexCoords");//
+		gl.enableVertexAttribArray(this.shader.tAttrib);
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.tBuffer);
+		gl.vertexAttribPointer(this.shader.tAttrib,this.tBuffer.itemSize, gl.FLOAT, false, 0, 0);
+		
+		this.shader.pMatrixUniform = gl.getUniformLocation(this.shader, "uPMatrix");//
+		this.shader.mvMatrixUniform = gl.getUniformLocation(this.shader, "uMVMatrix");//
+
+		this.shader.uNormalMatrix = gl.getUniformLocation(this.shader, "uNormalMatrix");//
+		this.shader.uNormalizing = gl.getUniformLocation(this.shader, "uNormalizing");//
+		this.shader.uMaterialColor = gl.getUniformLocation(this.shader, "uMaterialColor");//
+		this.shader.uTexturing = gl.getUniformLocation(this.shader, "uTexturing");//
+
+		this.shader.uLightPos = gl.getUniformLocation(this.shader, "uLightPos");//
+		this.shader.uLightColor = gl.getUniformLocation(this.shader, "uLightColor");//
+		this.shader.uAmbiantLight = gl.getUniformLocation(this.shader, "uAmbiantLight");//
+		this.shader.uLighting = gl.getUniformLocation(this.shader, "uLighting");//
+
+		this.shader.uTextureUnit = gl.getUniformLocation(this.shader, "uTextureUnit");
+		this.shader.uSampler = gl.getUniformLocation(this.shader, "uSampler");
+
+		this.shader.uLightSpecular = gl.getUniformLocation(this.shader, "uLightSpecular");//
+		this.shader.uMaterialSpecular = gl.getUniformLocation(this.shader, "uMaterialSpecular");//
+		this.shader.uMaterialShininess = gl.getUniformLocation(this.shader, "uMaterialShininess");//
+
+		this.shader.uLambda = gl.getUniformLocation(this.shader, "uLambda");
+		this.shader.uOrientation = gl.getUniformLocation(this.shader, "uOrientation");
+		this.shader.uDeltaProfil = gl.getUniformLocation(this.shader, "uDeltaProfil");
+		this.shader.uFreqency = gl.getUniformLocation(this.shader, "uFreqency");
+		this.shader.uVelocity = gl.getUniformLocation(this.shader, "uVelocity");
+		this.shader.uDeltaDeep = gl.getUniformLocation(this.shader, "uDeltaDeep");
+		this.shader.uNtiles = gl.getUniformLocation(this.shader, "uNtiles");
+		this.shader.uWeight = gl.getUniformLocation(this.shader, "uWeight");
+
+		gl.uniform1f(this.shader.uLambda, this.lambda);
+		gl.uniform1f(this.shader.uOrientation, this.orientation);
+		gl.uniform1f(this.shader.uDeltaProfil, this.delta_profil);
+		gl.uniform1f(this.shader.uFreqency, this.freqency);
+		gl.uniform1f(this.shader.uVelocity, this.velocity);
+		gl.uniform1f(this.shader.uDeltaDeep, this.delta_deep);
+		gl.uniform1f(this.shader.uNtiles, this.ntiles);
+		gl.uniform1f(this.shader.uWeight, this.weight);
+
+
+		mat4.identity(mvMatrix);
+		mat4.translate(mvMatrix, distCENTER);
+		mat4.multiply(mvMatrix, rotMatrix);
+
+		gl.uniformMatrix4fv(this.shader.pMatrixUniform, false, pMatrix);
+		gl.uniformMatrix4fv(this.shader.mvMatrixUniform, false, mvMatrix);
+
+		var normalMatrix = mat3.create();
+        mat4.toInverseMat3(mvMatrix, normalMatrix);
+        mat3.transpose(normalMatrix);
+        gl.uniformMatrix3fv(this.shader.uNormalMatrix, false, normalMatrix);
+
+		gl.uniform1i(this.shader.uNormalizing, 1);
+		gl.uniform1i(this.shader.uTexturing, 1); // texture activation
+		gl.uniform4fv(this.shader.uMaterialColor, [0.5, 0.5, 0.5, 1.0]);
+
+		gl.uniform3fv(this.shader.uLightPos, lightPos);
+		gl.uniform4fv(this.shader.uAmbiantLight, [0.05, 0.2, 0.3, 1.0]);
+		gl.uniform4fv(this.shader.uLightColor, [0.9, 0.95, 1.0, 1.0])
+		gl.uniform1i(this.shader.uTextureUnit, 0);
+		gl.uniform1i(this.shader.uSampler, 1);
+		gl.uniform1i(this.shader.uLighting, true);
+
+		gl.uniform4fv(this.shader.uLightSpecular, [1.0, 1.0, 1.0, 1.0]);    
+		gl.uniform4fv(this.shader.uMaterialSpecular, [1.0, 1.0, 1.0, 1.0]);
+		gl.uniform1f(this.shader.uMaterialShininess, 200.0);
+
+		gl.uniform1i(this.shader.uTextureUnit, 0);
+		gl.activeTexture(gl.TEXTURE0);
+		gl.bindTexture(gl.TEXTURE_2D, this.texture);
+
+		gl.uniform1i(this.shader.uSampler, 1);
+		gl.activeTexture(gl.TEXTURE1);
+		gl.bindTexture(gl.TEXTURE_2D, this.bumpmap);
+	}
+
+	draw() {
+		if(this.shader && this.loaded==4) {		
+			this.setShadersParams();
+			
+			gl.drawArrays(gl.TRIANGLE_FAN, 0, this.vBuffer.numItems);
+			gl.drawArrays(gl.LINE_LOOP, 0, this.vBuffer.numItems);
+		}
 	}
 }
 
