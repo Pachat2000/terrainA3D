@@ -535,6 +535,8 @@ class wave {
 		this.freqency = 1/this.lambda;
 		this.velocity = Math.sqrt((this.lambda*9.81)/(2*Math.PI));
 		this.delta_deep = 8.0;
+		this.ntiles = 1;
+		this.weight = 1/this.ntiles;
 	}
 
 	loadTexture(src)
