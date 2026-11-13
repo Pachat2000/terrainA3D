@@ -440,14 +440,6 @@ class river {
 		this.tBuffer.itemSize = 2;
 		this.tBuffer.numItems = 4;
 
-		/*
-		this.nBuffer = gl.createBuffer();
-		gl.bindBuffer(gl.ARRAY_BUFFER, this.nBuffer);
-		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(normals), gl.STATIC_DRAW);
-		this.nBuffer.itemSize = 3;
-		this.nBuffer.numItems = 4;
-		*/
-
 		loadShaders(this);
 		this.initTexture()
 	}
@@ -466,13 +458,6 @@ class river {
 		gl.enableVertexAttribArray(this.shader.tAttrib);
 		gl.bindBuffer(gl.ARRAY_BUFFER, this.tBuffer);
 		gl.vertexAttribPointer(this.shader.tAttrib,this.tBuffer.itemSize, gl.FLOAT, false, 0, 0);
-
-		/*
-		this.shader.nAttrib = gl.getAttribLocation(this.shader, "aNormals");//
-		gl.enableVertexAttribArray(this.shader.nAttrib);
-        gl.bindBuffer(gl.ARRAY_BUFFER, this.nBuffer);
-        gl.vertexAttribPointer(this.shader.nAttrib, this.nBuffer.itemSize, gl.FLOAT, false, 0, 0);
-		*/
 		
 		this.shader.pMatrixUniform = gl.getUniformLocation(this.shader, "uPMatrix");//
 		this.shader.mvMatrixUniform = gl.getUniformLocation(this.shader, "uMVMatrix");//
@@ -538,6 +523,74 @@ class river {
 			gl.drawArrays(gl.TRIANGLE_FAN, 0, this.vBuffer.numItems);
 			gl.drawArrays(gl.LINE_LOOP, 0, this.vBuffer.numItems);
 		}
+	}
+}
+
+
+class wave {
+	constructor(){
+		this.lambda = 50;
+		this.orientation = null; // vecteur 2D
+		this.delta_profil = 0.8;
+		this.freqency = 1/this.lambda;
+		this.velocity = Math.sqrt((this.lambda*9.81)/(2*Math.PI));
+		this.delta_deep = 8.0;
+	}
+
+	loadTexture(src)
+	{
+		var texImage = new Image();
+		var texture = gl.createTexture();
+
+		texImage.onload = function () {
+			gl.pixelStorei(gl.UNPACK_FLIP_Y_WEBGL, true);
+			gl.bindTexture(gl.TEXTURE_2D, texture);
+			gl.texImage2D(gl.TEXTURE_2D, 0, gl.RGBA, gl.RGBA, gl.UNSIGNED_BYTE, texImage);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MAG_FILTER, gl.LINEAR);
+			gl.texParameteri(gl.TEXTURE_2D, gl.TEXTURE_MIN_FILTER, gl.LINEAR);
+			gl.activeTexture(gl.TEXTURE0);
+			gl.bindTexture(gl.TEXTURE_2D, null);
+		};
+		texImage.src = src;
+		return texture;
+	}
+
+	initTexture(){
+		this.texture = this.loadTexture("texture/exemplar.png");
+		//this.bumpmap = this.loadTexture("bumpmap/river_normal.jpg")
+	}
+
+	initAll() {
+		var size=1.0;
+		var vertices = [
+			-size, -size, 0.1,
+			 size, -size, 0.1,
+			 size, size, 0.1,
+			-size, size, 0.1
+		];
+
+		var texcoords = [
+			0.0,0.0,
+			0.0,1.0,
+			1.0,1.0,
+			1.0,0.0
+		];
+
+
+		this.vBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.vBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(vertices), gl.STATIC_DRAW);
+		this.vBuffer.itemSize = 3;
+		this.vBuffer.numItems = 4;
+
+		this.tBuffer = gl.createBuffer();
+		gl.bindBuffer(gl.ARRAY_BUFFER, this.tBuffer);
+		gl.bufferData(gl.ARRAY_BUFFER, new Float32Array(texcoords), gl.STATIC_DRAW);
+		this.tBuffer.itemSize = 2;
+		this.tBuffer.numItems = 4;
+
+		loadShaders(this);
+		this.initTexture()
 	}
 }
 
